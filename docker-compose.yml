@@ -1,0 +1,88 @@
+version: "3.0"
+services:
+  redis:
+    image: redis
+    container_name: "up_hellm_reportes_falla_database_memory"
+    networks:
+      - webnet
+  database:
+    image: postgres
+    container_name: "up_hellm_reportes_falla_database"
+    volumes:
+      - ./database/data:/var/lib/postgresql/data
+      - ./database/migrations:/home/migrations
+      - ./database/seeders:/home/seeders
+    environment:
+      POSTGRES_PASSWORD: edsd5450
+      POSTGRES_USER: sysa
+      POSTGRES_DB: up_hellm_reportes_falla
+    networks:
+      - webnet
+  api:
+    image: adonisjs
+    container_name: "up_hellm_reportes_falla_api"
+    depends_on:
+      - database
+      - redis
+    volumes:
+      - ./api:/home/api
+    working_dir: "/home/api"
+    environment:
+      MODE: dev
+      HOST: 0.0.0.0
+      PORT: 3333
+      NODE_ENV: development
+      APP_NAME: SPC_HELLMANN
+      APP_KEY: x7Sf7NijdcyVmZEdyrQKR3LtjG0dp7CM
+      REDIS_CONNECTION: local
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_CONNECTION: pg
+      DB_HOST: database
+      DB_USER: sysa
+      DB_PASSWORD: edsd5450
+      DB_DATABASE: up_hellm_reportes_falla
+      DB_CONNECTION_WONDER: mssql
+      DB_HOST_WONDER: 192.168.0.113
+      DB_PORT_WONDER: 1433
+      DB_USER_WONDER: sysa
+      DB_PASSWORD_WONDER: edsd5450
+      DB_DATABASE_WONDER: Runtime
+      HASH_DRIVER: bcrypt
+      MAIL_CONNECTION: smtp
+      SMTP_HOST: smtp.gmail.com
+      MAIL_USERNAME: alarmas.unilver@gmail.com
+      MAIL_PASSWORD: edsd5450
+    command: ["bash", "/home/api/run.sh"]
+    networks:
+      - webnet
+  client:
+    image: nuxtjs
+    container_name: "up_hellm_reportes_falla_client"
+    depends_on:
+      - api
+    volumes:
+      - ./client:/home/client
+    working_dir: "/home/client"
+    environment:
+      MODE: dev
+      HOST: 0.0.0.0
+      PORT: 3000
+    command: ["bash", "/home/client/run.sh"]
+    networks:
+      - webnet
+  proxy:
+    image: nginx
+    container_name: "up_hellm_reportes_falla_proxy"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./proxy:/etc/nginx/conf.d
+    depends_on:
+      - client
+      - api
+    networks:
+      - webnet
+networks:
+  webnet:
+    driver: bridge
